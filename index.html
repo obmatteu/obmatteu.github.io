@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta name="google-site-verification" content="DUbHyKbzQvbLT5CE4csjOeYh7762abYEHbccArTznno">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matteu Olivieri Bastiani — Vulnerability Research & Reverse Engineering</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="description" content="Matteu Olivieri Bastiani — Chercheur indépendant en sécurité bas-niveau. Kernel Linux, firmware, mobile, reverse engineering.">
+  <meta name="author" content="Matteu Olivieri Bastiani">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="profile">
+  <meta property="og:title" content="Matteu Olivieri Bastiani — Vulnerability Research & Reverse Engineering">
+  <meta property="og:description" content="Chercheur indépendant en sécurité bas-niveau. Kernel Linux, firmware, mobile, reverse engineering.">
+  <meta property="og:image" content="favicon.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Matteu Olivieri Bastiani — Vulnerability Research & Reverse Engineering">
+  <meta name="twitter:description" content="Chercheur indépendant en sécurité bas-niveau. Kernel Linux, firmware, mobile, reverse engineering.">
+
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; connect-src https://formspree.io; base-uri 'self'; form-action https://formspree.io; frame-ancestors 'none';">
+  <!-- En-têtes de sécurité complémentaires -->
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0a0a0b">
+  <link rel="canonical" href="https://matteu-olivieri-bastiani.com/">
+
+  <!-- Schema.org Person -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Matteu Olivieri Bastiani",
+    "jobTitle": "Chercheur en sécurité bas-niveau",
+    "description": "Chercheur indépendant spécialisé en kernel Linux, firmware, mobile et reverse engineering.",
+    "url": "https://github.com/obmatteu",
+    "sameAs": [
+      "https://github.com/obmatteu",
+      "https://tryhackme.com/p/matteu"
+    ],
+    "knowsAbout": [
+      "Vulnerability Research",
+      "Kernel Security",
+      "Reverse Engineering",
+      "Firmware Analysis",
+      "Mobile Security"
+    ]
+  }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0a0a0b;
+      --bg-2:      #111113;
+      --bg-3:      #18181c;
+      --border:    #222228;
+      --border-hi: #2e2e38;
+      --text:      #d8d8e0;
+      --text-dim:  #5a5a6e;
+      --text-mid:  #9090a8;
+      --accent:    #c0392b;
+      --accent-lo: rgba(192,57,43,0.12);
+      --accent-hi: #e74c3c;
+      --white:     #f0f0f5;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Syne', sans-serif;
+      --max:       1060px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(46,46,56,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(46,46,56,0.08) 1px, transparent 1px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 48px 48px, 48px 48px, 256px 256px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,10,11,0.92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+    }
+    .nav-logo {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--white);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-mid);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      font-family: var(--mono);
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    section { padding: 4.5rem 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    ::selection { background: var(--accent-lo); color: var(--white); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 7rem 0 5rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 3rem;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+    .hero-name {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      color: var(--white);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .hero-title {
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: var(--text-mid);
+      margin-bottom: 2rem;
+      letter-spacing: 0.01em;
+    }
+    .hero-bio {
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      max-width: 520px;
+      line-height: 1.9;
+    }
+    .hero-bio strong { color: var(--text); }
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.4rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.65em 1.4em;
+      border-radius: 3px;
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-mid);
+      border: 1px solid var(--border-hi);
+    }
+    .btn-ghost:hover { border-color: var(--text-mid); color: var(--white); }
+
+    .hero-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border-hi);
+      flex-shrink: 0;
+      background: var(--bg-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 1.7rem;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      user-select: none;
+    }
+    .hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-avatar .dot { color: var(--accent); }
+
+    /* ── SECTION HEADER ── */
+    .sec-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-family: var(--mono);
+    }
+    .sec-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── PROJETS ── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .project-card {
+      background: var(--bg);
+      padding: 1.6rem;
+      transition: background 0.18s;
+      position: relative;
+    }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 2px; height: 100%;
+      background: var(--accent);
+      transform: scaleY(0);
+      transition: transform 0.2s ease;
+      transform-origin: top;
+    }
+    .project-card:hover { background: var(--bg-2); }
+    .project-card:hover::before { transform: scaleY(1); }
+
+    .project-tag {
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+      font-family: var(--mono);
+    }
+    .project-name {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: var(--white);
+      margin-bottom: 0.6rem;
+      line-height: 1.3;
+    }
+    .project-desc {
+      font-size: 0.8rem;
+      color: var(--text-mid);
+      line-height: 1.75;
+    }
+    .project-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4em;
+      margin-top: 1rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .project-link:hover { color: var(--accent-hi); }
+    .project-link::after { content: '→'; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: var(--bg-3);
+      padding: 0.1em 0.3em;
+      border-radius: 2px;
+      color: var(--text);
+    }
+
+    /* ── COMPÉTENCES ── */
+    .skills-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+    .skill-group-title {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--white);
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .skill-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-bottom: 2rem;
+    }
+    .skill-items li {
+      font-size: 0.82rem;
+      color: var(--text-mid);
+      padding: 0.4rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+    }
+    .skill-items li::before {
+      content: '·';
+      color: var(--accent);
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      margin-top: 0.1em;
+    }
+
+    /* ── 0DAY TABLE ── */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .zeroday-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 580px;
+    }
+    .zeroday-table thead tr {
+      border-bottom: 1px solid var(--border-hi);
+    }
+    .zeroday-table th {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 0.8rem 1rem;
+      text-align: left;
+      font-weight: 400;
+      background: var(--bg-2);
+    }
+    .zeroday-table td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-mid);
+      vertical-align: top;
+    }
+    .zeroday-table tbody tr:last-child td { border-bottom: none; }
+    .zeroday-table tr:hover td { background: var(--bg-2); }
+    .zday-name {
+      color: var(--white);
+      font-weight: 500;
+      font-size: 0.84rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2em 0.55em;
+      border-radius: 2px;
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+    .badge-red { background: var(--accent-lo); color: var(--accent-hi); border: 1px solid rgba(192,57,43,0.3); }
+    .badge-grey { background: rgba(90,90,110,0.12); color: var(--text-mid); border: 1px solid var(--border-hi); }
+
+    /* ── TIMELINE ── */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0.4rem; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+    .tl-event {
+      position: relative;
+      margin-bottom: 2.5rem;
+    }
+    .tl-event::before {
+      content: '';
+      position: absolute;
+      left: -1.5rem;
+      top: 0.45rem;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 1px solid var(--bg);
+      box-shadow: 0 0 0 3px var(--accent-lo);
+    }
+    .tl-title {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+    }
+    .tl-desc {
+      font-size: 0.82rem;
+      color: var(--text-mid);
+      line-height: 1.8;
+    }
+    .tl-list {
+      list-style: none;
+      margin-top: 0.6rem;
+    }
+    .tl-list li {
+      font-size: 0.81rem;
+      color: var(--text-mid);
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5em;
+    }
+    .tl-list li::before { content: '›'; color: var(--accent); flex-shrink: 0; }
+
+    /* ── RÉSEAUX / GROUPES ── */
+    .links-grid {
+      display: flex;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      width: fit-content;
+    }
+    .link-item {
+      background: var(--bg);
+      padding: 1.4rem 2rem;
+      transition: background 0.2s;
+      min-width: 200px;
+    }
+    .link-item:hover { background: var(--bg-2); }
+    .link-item-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+    }
+    .link-item a, .link-item span {
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--white);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .link-item a:hover { color: var(--accent-hi); }
+    .link-item-sub {
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+
+    /* ── CERTIFICATIONS ── */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .cert-item {
+      background: var(--bg);
+      padding: 1.4rem 1.6rem;
+      transition: background 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+    }
+    .cert-item:hover { background: var(--bg-2); }
+    .cert-issuer {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .cert-name {
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--white);
+      line-height: 1.3;
+    }
+    .cert-org {
+      font-size: 0.74rem;
+      color: var(--text-mid);
+    }
+    .cert-meta {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+    .cert-intro {
+      font-size: 0.84rem;
+      color: var(--text-mid);
+      max-width: 640px;
+      margin-bottom: 1.6rem;
+      line-height: 1.8;
+    }
+
+    /* ── CONTACT ── */
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+    .contact-info p {
+      font-size: 0.85rem;
+      color: var(--text-mid);
+      line-height: 1.9;
+      margin-bottom: 1.2rem;
+    }
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .contact-form input,
+    .contact-form textarea {
+      background: var(--bg-2);
+      border: 1px solid var(--border-hi);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .contact-form input:focus,
+    .contact-form textarea:focus { border-color: var(--accent); }
+    .contact-form textarea { resize: vertical; min-height: 120px; }
+    .contact-form button {
+      align-self: flex-start;
+      cursor: pointer;
+    }
+    #formMessage {
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.4rem 2rem 1.6rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      max-width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-col-title {
+      font-size: 0.66rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.8rem;
+    }
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    footer a { color: var(--text-dim); text-decoration: none; transition: color 0.2s ease; }
+    footer a:hover { color: var(--white); }
+    @media (max-width: 700px) {
+      .footer-top { grid-template-columns: 1fr; gap: 1.4rem; }
+    }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      padding: 1rem 1.4rem;
+      border-left: 2px solid var(--border-hi);
+      margin-top: 3rem;
+      line-height: 1.7;
+    }
+    .disclaimer a { color: var(--text-mid); }
+
+    /* ── SCROLL TOP ── */
+    #scrollTopBtn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 200;
+      background: var(--bg-3);
+      border: 1px solid var(--border-hi);
+      color: var(--text-mid);
+      width: 40px; height: 40px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    #scrollTopBtn.show { opacity: 1; pointer-events: auto; }
+    #scrollTopBtn:hover { border-color: var(--accent); color: var(--white); }
+
+    /* ── ABOUT BLOCK ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 4rem;
+    }
+    .about-text p {
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      line-height: 1.9;
+      margin-bottom: 1rem;
+    }
+    .about-text strong { color: var(--text); }
+    .about-meta { border-left: 1px solid var(--border); padding-left: 2rem; }
+    .meta-item {
+      margin-bottom: 1.4rem;
+    }
+    .meta-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.25rem;
+    }
+    .meta-value {
+      font-size: 0.84rem;
+      color: var(--text);
+    }
+
+    /* ── ANIMATIONS ── */
+    /* Progressive enhancement : par défaut tout est visible.
+       JS ajoute la classe .js-animate à <html> pour activer les animations. */
+    .fade-in {
+      opacity: 1;
+      transform: none;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+    /* Animations activées uniquement quand JS confirme sa présence */
+    .js-animate .fade-in {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    .js-animate .fade-in.visible {
+      opacity: 1;
+      transform: none;
+    }
+    /* Respect des préférences utilisateur pour les animations */
+    @media (prefers-reduced-motion: reduce) {
+      .js-animate .fade-in { opacity: 1; transform: none; transition: none; }
+      html { scroll-behavior: auto; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-avatar { display: none; }
+      .hero-cta { flex-wrap: wrap; }
+      .skills-columns { grid-template-columns: 1fr; gap: 0; }
+      .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
+      .about-grid { grid-template-columns: 1fr; }
+      .about-meta { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 1.5rem; margin-top: 1rem; }
+      /* Navigation mobile : scroll horizontal au lieu de masquage */
+      nav .nav-links {
+        gap: 1.4rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        max-width: 100%;
+      }
+      nav .nav-links::-webkit-scrollbar { display: none; }
+      nav .nav-links li { flex-shrink: 0; }
+      nav .nav-links a { font-size: 0.72rem; }
+      .nav-inner { padding: 0 1rem; gap: 1rem; }
+      .nav-logo { flex-shrink: 0; }
+      main { padding: 0 1rem; }
+      .zeroday-table { display: block; overflow-x: auto; }
+      /* Links-grid responsive : permettre wrap pour éviter overflow */
+      .links-grid { flex-wrap: wrap; width: 100%; }
+      .link-item { min-width: 0; flex: 1 1 200px; }
+    }
+  </style>
+</head>
+<body>
+
+  <noscript>
+    <div style="background:var(--accent-lo);color:var(--text);border-bottom:1px solid var(--accent);padding:0.8rem 2rem;font-family:var(--mono);font-size:0.78rem;text-align:center;">
+      Ce site fonctionne sans JavaScript, mais le formulaire de contact et certaines animations sont désactivés. Email : via GitHub <a href="https://github.com/obmatteu" style="color:var(--accent);">obmatteu</a>
+    </div>
+  </noscript>
+
+  <nav aria-label="Navigation principale">
+    <div class="nav-inner">
+      <a href="#hero" class="nav-logo">MOB<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="#about">Profil</a></li>
+        <li><a href="#projects">Projets</a></li>
+        <li><a href="#writeups">Publications</a></li>
+        <li><a href="#skills">Compétences</a></li>
+        <li><a href="#zerodays">Recherches</a></li>
+        <li><a href="#experience">Expérience</a></li>
+        <li><a href="#learning">Formation</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+
+    
+    <section class="hero" id="hero">
+      <div>
+        <div class="hero-tag">Vulnerability Research · Kernel · Reverse Engineering</div>
+        <h1 class="hero-name">Matteu Olivieri<br>Bastiani</h1>
+        <p class="hero-title">Low-Level Security Research · Systems Internals</p>
+        <p class="hero-bio">
+          Chercheur indépendant en sécurité bas-niveau. Focus sur le kernel Linux, le firmware embarqué, la sécurité mobile et le reverse engineering. Travail orienté vers la compréhension des systèmes et l'identification de surfaces d'attaque non conventionnelles.
+        </p>
+        <div class="hero-cta">
+          <a href="#contact" class="btn btn-primary">Me contacter</a>
+          <a href="https://github.com/obmatteu" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" aria-label="Mon profil GitHub (ouvre dans un nouvel onglet)">GitHub</a>
+        </div>
+      </div>
+      <div class="hero-avatar" aria-hidden="true">
+        <span>m<span class="dot">.</span>ob</span>
+      </div>
+    </section>
+
+    
+    <section id="about" class="fade-in">
+      <div class="sec-label">Profil</div>
+      <div class="about-grid">
+        <div class="about-text">
+          <p>
+            Mon approche repose sur l'<strong>analyse des hypothèses de sécurité implicites</strong> dans les systèmes complexes, afin d'identifier les comportements inattendus et surfaces d'attaque non conventionnelles. Je me concentre sur la compréhension profonde des mécanismes sous-jacents et l'identification de scénarios d'exploitation en conditions réelles.
+          </p>
+          <p>
+            Mon travail principal porte sur la <strong>sécurité bas-niveau</strong> : kernel Linux et Android, firmware embarqué, reverse engineering. Mes recherches secondaires (firmware baseband, environnements VR, réseaux GSM) prolongent naturellement ce focus sur les systèmes proches du matériel.
+          </p>
+          <p>
+            En parallèle, je mène un <strong>travail exploratoire personnel</strong> sur les systèmes dynamiques et leur modélisation mathématique, ainsi que sur des projets embarqués à fort enjeu humain (drone thermique de recherche de personnes disparues).
+          </p>
+          <p>
+            J'ai participé à des programmes de bug bounty et collaboré avec plusieurs acteurs du secteur de la cybersécurité.
+          </p>
+        </div>
+        <div class="about-meta">
+          <div class="meta-item">
+            <div class="meta-label">Statut</div>
+            <div class="meta-value">Acteur indépendant</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Domaines</div>
+            <div class="meta-value">Kernel · Reverse Engineering · Mobile · Firmware</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Zone</div>
+            <div class="meta-value">Internationale</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">TryHackMe</div>
+            <div class="meta-value"><a href="https://tryhackme.com/p/matteu" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">matteu</a></div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">GitHub</div>
+            <div class="meta-value"><a href="https://github.com/obmatteu" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">obmatteu</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="projects" class="fade-in">
+      <div class="sec-label">Projets & Réalisations</div>
+      <div class="projects-grid">
+
+        <div class="project-card">
+          <div class="project-tag">Kernel Linux · Sécurité mémoire</div>
+          <div class="project-name">Linux BTRFS Write-What-Where</div>
+          <p class="project-desc">Recherche de vulnérabilité dans le sous-système BTRFS du kernel Linux. Disclosure publique.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Kernel Linux · Désynchronisation mémoire</div>
+          <div class="project-name">Kernel Mapping Desynchronization</div>
+          <p class="project-desc">Recherche sur la gestion mémoire du kernel Linux. Disclosure publique avec PoC.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Android · Cryptographie</div>
+          <div class="project-name">N3xtCrypt</div>
+          <p class="project-desc">Système de chiffrement des communications pour des échanges à haute confidentialité.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Drone · IA embarquée</div>
+          <div class="project-name">Drone SAR</div>
+          <p class="project-desc">Drone de recherche de personnes disparues thermique, IA, communication vocale, GPS. Conçu pour les zones inaccessibles.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">VR · Sécurité</div>
+          <div class="project-name">Meta Quest 3 — Sécurité VR</div>
+          <p class="project-desc">Étude de la sécurité du shell VR sur Meta Quest 3 via analyse statique et dynamique.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Mathématiques · Systèmes dynamiques</div>
+          <div class="project-name">Transitions chaotiques endogènes</div>
+          <p class="project-desc">Modélisation exploratoire de la transition déterminisme → chaos dans les systèmes non autonomes. Travail personnel de recherche.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Recherche expérimentale</div>
+          <div class="project-name">Architecture hybride haute densité</div>
+          <p class="project-desc">Modélisation exploratoire d'architectures distribuées : calcul haute performance, réseaux optiques, orchestration par intelligence artificielle.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Apple Silicon · GPU</div>
+          <div class="project-name">Calcul GPU — Metal / Swift</div>
+          <p class="project-desc">Optimisation du GPU Apple Silicon pour le calcul parallèle GPGPU via Metal exploration des capacités de calcul hautes performances.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Firmware · Analyse binaire</div>
+          <div class="project-name">Capture de firmware</div>
+          <p class="project-desc">Analyse de firmware embarqué : structure, partitions et mécanismes de mise à jour.</p>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Android · Sécurité système</div>
+          <div class="project-name">Sécurité du démarrage Android</div>
+          <p class="project-desc">Analyse du processus de démarrage Android et des mécanismes de vérification d'intégrité.</p>
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section id="writeups" class="fade-in">
+      <div class="sec-label">Publications & analyses techniques</div>
+      <div class="projects-grid">
+
+        <div class="project-card">
+          <div class="project-tag">Kernel Linux · Analyse technique</div>
+          <div class="project-name">BTRFS Memory Management Analysis</div>
+          <p class="project-desc">Analyse détaillée de la gestion mémoire dans le système de fichiers BTRFS, identification de comportements critiques en conditions d'erreur.</p>
+          <span class="badge badge-grey" style="margin-top:0.8rem">Brouillon en cours</span>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Android · Boot integrity</div>
+          <div class="project-name">Android Boot Security Notes</div>
+          <p class="project-desc">Documentation technique sur les mécanismes de vérification d'intégrité lors du démarrage Android et leur surface d'attaque.</p>
+          <span class="badge badge-grey" style="margin-top:0.8rem">Notes de recherche</span>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">VR · Reverse engineering</div>
+          <div class="project-name">Meta Quest 3 RE Notes</div>
+          <p class="project-desc">Notes de reverse engineering sur l'environnement système du Meta Quest 3, analyse des composants shell et mécanismes de sécurité.</p>
+          <span class="badge badge-grey" style="margin-top:0.8rem">Notes de recherche</span>
+        </div>
+
+        <div class="project-card">
+          <div class="project-tag">Kernel · PoC</div>
+          <div class="project-name">Memory Desynchronization PoC</div>
+          <p class="project-desc">Proof of concept démontrant une désynchronisation de mapping mémoire dans le kernel Linux, avec analyse d'impact et scénarios d'exploitation.</p>
+          <span class="badge badge-grey" style="margin-top:0.8rem">Brouillon en cours</span>
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section id="skills" class="fade-in">
+      <div class="sec-label">Compétences techniques</div>
+      <div class="skills-columns">
+        <div>
+          <div class="skill-group-title">Sécurité système & Kernel</div>
+          <ul class="skill-items">
+            <li>Analyse et recherche de vulnérabilités dans le kernel Linux et Android</li>
+            <li>Reverse engineering bas-niveau : IDA Pro, Ghidra, ARM64/x86</li>
+            <li>Analyse de firmware embarqué et de composants système</li>
+            <li>Compréhension des mécanismes de protection mémoire et de gestion des processus</li>
+          </ul>
+
+          <div class="skill-group-title">Sécurité mobile & applicative</div>
+          <ul class="skill-items">
+            <li>Analyse d'applications Android : bytecode Dalvik, bibliothèques natives</li>
+            <li>Audit de sécurité d'API et d'applications web</li>
+            <li>Recherche de vulnérabilités logiques dans les mécanismes d'authentification</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="skill-group-title">Développement & Outils</div>
+          <ul class="skill-items">
+            <li>Développement d'outils d'analyse et d'automatisation</li>
+            <li>Scripting Python, C, Swift pour l'instrumentation et l'analyse</li>
+            <li>Calcul GPU via Metal/Swift sur Apple Silicon</li>
+          </ul>
+
+          <div class="skill-group-title">Recherche & Innovation</div>
+          <ul class="skill-items">
+            <li>Modélisation mathématique de systèmes dynamiques complexes</li>
+            <li>Conception de systèmes embarqués à IA</li>
+            <li>Rédaction de rapports techniques et disclosure responsable</li>
+            <li>Bug bounty et participation à des programmes de sécurité</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="zerodays" class="fade-in">
+      <div class="sec-label">Recherches publiées</div>
+      <div class="table-wrap">
+      <table class="zeroday-table">
+        <thead>
+          <tr>
+            <th>Recherche</th>
+            <th>Domaine</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="zday-name">BTRFS — Gestion mémoire</span><br><span style="font-size:0.76rem;color:var(--text-dim)">Kernel Linux</span></td>
+            <td>Sécurité système</td>
+            <td><span class="badge badge-red">Disclosure publique</span></td>
+          </tr>
+          <tr>
+            <td><span class="zday-name">Kernel Mapping Desync</span><br><span style="font-size:0.76rem;color:var(--text-dim)">Kernel Linux</span></td>
+            <td>Sécurité système</td>
+            <td><span class="badge badge-red">Disclosure publique</span></td>
+          </tr>
+          <tr>
+            <td><span class="zday-name">Sécurité Android — Démarrage système</span><br><span style="font-size:0.76rem;color:var(--text-dim)">Android</span></td>
+            <td>Sécurité mobile</td>
+            <td><span class="badge badge-grey">Recherche privée</span></td>
+          </tr>
+          <tr>
+            <td><span class="zday-name">Sécurité applicative — Authentification</span><br><span style="font-size:0.76rem;color:var(--text-dim)">Application mobile</span></td>
+            <td>Sécurité applicative</td>
+            <td><span class="badge badge-grey">Soumis</span></td>
+          </tr>
+          <tr>
+            <td><span class="zday-name">Sécurité VR — Shell système</span><br><span style="font-size:0.76rem;color:var(--text-dim)">Meta Quest 3</span></td>
+            <td>Sécurité embarquée</td>
+            <td><span class="badge badge-grey">En cours</span></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    
+    <section id="experience" class="fade-in">
+      <div class="sec-label">Expérience & Reconnaissances</div>
+      <div class="timeline">
+
+        <div class="tl-event">
+          <div class="tl-title">Kernel Linux Recherche et exploitation</div>
+          <ul class="tl-list">
+            <li>Recherche de vulnérabilités dans des modules du kernel Linux</li>
+            <li>Analyse du comportement système lors de conditions d'erreur critiques</li>
+            <li>Étude des fonctions bas-niveau et de leurs interactions</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section id="learning" class="fade-in">
+      <div class="sec-label">Formation autodidacte & certifications</div>
+      <p class="cert-intro">
+        Formation continue en autodidacte. Parcours offensifs, fondamentaux scientifiques et exploration de domaines connexes. Les certifications listées complètent un apprentissage principalement autonome.
+      </p>
+      <div class="cert-grid">
+
+        <div class="cert-item">
+          <div class="cert-issuer">THM</div>
+          <div class="cert-name">Red Teaming</div>
+          <div class="cert-org">TryHackMe · Learning Path</div>
+          <div class="cert-meta">Feb 2026 · 50h20</div>
+        </div>
+
+        <div class="cert-item">
+          <div class="cert-issuer">THM</div>
+          <div class="cert-name">Offensive Pentesting</div>
+          <div class="cert-org">TryHackMe · Learning Path</div>
+          <div class="cert-meta">Feb 2026 · 32h</div>
+        </div>
+
+        <div class="cert-item">
+          <div class="cert-issuer">Coursera</div>
+          <div class="cert-name">Quantum Mechanics</div>
+          <div class="cert-org">University of Colorado Boulder</div>
+          <div class="cert-meta">Feb 2026</div>
+        </div>
+
+        <div class="cert-item">
+          <div class="cert-issuer">Cisco</div>
+          <div class="cert-name">Ethical Hacker</div>
+          <div class="cert-org">Cisco Networking Academy</div>
+          <div class="cert-meta">Verified</div>
+        </div>
+
+        <div class="cert-item">
+          <div class="cert-issuer">Fortinet</div>
+          <div class="cert-name">NSE 1 — Threat Landscape</div>
+          <div class="cert-org">Fortinet · Exam v3.0</div>
+          <div class="cert-meta">Verified</div>
+        </div>
+
+        <div class="cert-item">
+          <div class="cert-issuer">Google</div>
+          <div class="cert-name">AI Professional Certificate</div>
+          <div class="cert-org">Google Career Certificates</div>
+          <div class="cert-meta">Feb 2026 · 7 courses</div>
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section id="networks" class="fade-in">
+      <div class="sec-label">Présence</div>
+      <div class="links-grid">
+        <div class="link-item">
+          <div class="link-item-label">TryHackMe</div>
+          <a href="https://tryhackme.com/p/matteu" target="_blank" rel="noopener noreferrer">matteu</a>
+          <div class="link-item-sub">Top 1% · Rang #4734 · 377 rooms · 31 badges · Professional</div>
+        </div>
+        <div class="link-item">
+          <div class="link-item-label">GitHub</div>
+          <a href="https://github.com/obmatteu" target="_blank" rel="noopener noreferrer">obmatteu</a>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="contact" class="fade-in">
+      <div class="sec-label">Contact</div>
+      <div class="contact-layout">
+        <div class="contact-info">
+          <p>
+            Disponible pour des missions de pentest, audit de sécurité et recherche en vulnérabilités. Ouvert à toute collaboration sérieuse.
+          </p>
+          <p>
+            Les demandes sérieuses sont traitées en priorité. Toute mission contraire à l'éthique ou à la loi est systématiquement refusée.
+          </p>
+        </div>
+        <form id="contactForm" class="contact-form" autocomplete="off">
+          <input type="text" name="name" placeholder="Nom" required>
+          <input type="email" name="email" placeholder="Email" required>
+          <textarea name="message" placeholder="Message" required></textarea>
+          <!-- Honeypot anti-spam : invisible aux humains, rempli par les bots -->
+          <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+          <button type="submit" class="btn btn-primary">Envoyer</button>
+          <div id="formMessage"></div>
+        </form>
+      </div>
+
+      <div class="disclaimer">
+        Ce site ne présente que des informations factuelles. Toute demande contraire à l'éthique ou à la loi est systématiquement refusée.
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-col">
+          <div class="footer-col-title">Navigation</div>
+          <ul>
+            <li><a href="#about">Profil</a></li>
+            <li><a href="#projects">Projets</a></li>
+            <li><a href="#writeups">Publications</a></li>
+            <li><a href="#zerodays">Recherches</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Travaux</div>
+          <ul>
+            <li><a href="#skills">Compétences</a></li>
+            <li><a href="#experience">Expérience</a></li>
+            <li><a href="#learning">Formation</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Présence</div>
+          <ul>
+            <li><a href="https://github.com/obmatteu" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+            <li><a href="https://tryhackme.com/p/matteu" target="_blank" rel="noopener noreferrer">TryHackMe</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Matteu Olivieri Bastiani</span>
+        <span>Bastia · Recherche indépendante en sécurité bas-niveau</span>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTopBtn" aria-label="Retour en haut">↑</button>
+
+  <script src="main.js" defer></script>
+
+</body>
+</html>
